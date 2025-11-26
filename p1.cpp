@@ -1,7 +1,9 @@
 #include <cstdint>
 #include <iostream>
 #include <fstream>
+#include <queue>
 #include <string>
+#include <unordered_set>
 #include <vector>
 #include <map>
 
@@ -19,15 +21,15 @@ struct State{
   int id;
   std::string state;
   std::vector<Transition> transitions;
-  uint8_t accept;
+  bool accept;
 };
 
 //function dec for simulation
-std::string run_dfa(std::map<int16_t, State> &dfa);
+std::string run_dfa(std::map<int16_t, State*> &dfa);
 
 
 int main(int argc, char** argv){
-  std::map<int16_t, State> dfa;
+  std::map<int16_t, State*> dfa;
   std::vector<State> states;
 
   /*read in file
@@ -39,38 +41,45 @@ int main(int argc, char** argv){
     std::string line;
     //read first part, setting up the dfa
     getline(fd, line, ',');
-    for(int i = 0; i < line.length() - 2; ++i){
-      char temp[2];
+    for(size_t i = 0; i < line.length() - 1; ++i){
       if(line[i] == 'q'){
         State s;
-        s.id = line[i+1];
-        //s.state = line[i] + line[i+1];
+        s.id = line[i+1] - '0';
         if(line[i+2] == 'f')
-          s.accept = 1;
+          s.accept = true;
         else
-          s.accept = 0;
+          s.accept = false;
         states.push_back(s);
       }
     }
+    
+
     //read rest of file
-    //example: q0aq1,q0bq2
     while(std::getline(fd, line, ',')){
       //convert state num in string into num
       //Note that states will be in order given by input so we can hardcode
-      State temp = states[line[1] - '0'];
-      State temp2 = states[line[4] - '0'];
+      State& temp = states[line[1] - '0'];
+      State& temp2 = states[line[4] - '0'];
       Transition t;
-      //t.prev = &temp;
       t.next= &temp2;
       t.c = line[2];
       if(!dfa.count(temp.id)){
-        dfa[temp.id] = temp;
-        temp.transitions.push_back(t);
+        dfa[temp.id] = &temp;
       }
-      else
-        dfa[temp.id].transitions.push_back(t);
+      temp.transitions.push_back(t);
     }
     fd.close();
+  }
+
+
+  for(auto state : states){
+    std::cout << "id: " << state.id << " accept: " << state.accept << "\n";
+    if(state.transitions.empty())
+      std::cout << "state " << state.id << " is empty\n";
+    for(auto t : state.transitions){
+      std::cout <<"transition\n";
+      std::cout <<"char " << t.c << " next " << t.next->id <<"\n";
+    }
   }
 
 
@@ -90,7 +99,7 @@ int main(int argc, char** argv){
   }
 
   //dfa M is not empty
-  std::cout<<"no\ndfa M accepts " << accepted_string;
+  std::cout<<"no\ndfa M accepts " << accepted_string << std::endl;
   return 0;
 }
 
@@ -98,9 +107,32 @@ int main(int argc, char** argv){
  * if there is such string, return it.
  * if no such string, return empty string
  */
-std::string run_dfa(std::map<int16_t, State> &dfa){
+std::string run_dfa(std::map<int16_t, State*> &dfa){
+  std::queue<std::pair<State*, std::string>> q;
+  std::unordered_set<int> visited;
+  State* start= dfa[0];
+  q.push({start, ""});
+  visited.insert(start->id);
 
+  while(!q.empty()){
+    auto [cur, s] = q.front();
+    q.pop();
+    
+    for(const auto& t : cur->transitions){
+      State* next = t.next;
+      s += t.c;
 
+      if(cur->accept)
+        return s;
+
+      if(!visited.count(next->id)){
+        visited.insert(next->id);
+        q.push({next, s});
+      }
+    }
+  }
+  //no accept state reached, return empty
+  return ""; 
 }
 
 
