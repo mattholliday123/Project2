@@ -14,7 +14,6 @@ struct Transition{
   State* prev;
   State* next;
   char c;
-
 };
 
 struct State{
@@ -22,16 +21,23 @@ struct State{
   std::string state;
   std::vector<Transition> transitions;
   bool accept;
+  //only use for dfa3
+  std::pair<int, int> paired_id; 
 };
 
 //function dec for simulation
 std::string run_dfa(std::map<int16_t, State*> &dfa);
+//function dec for read input to create dfa
 void read_machine(std::ifstream &fd, std::map<int16_t, State*>& dfa);
+//function dec to check equality
+std::string check_equality(std::map<int16_t, State*>& dfa3);
 
+std::map<int16_t, State*> create_c(std::map<int16_t, State*>& dfa,std::map<int16_t, State*>& dfa2);
 
 int main(int argc, char** argv){
   std::map<int16_t, State*> dfa;
   std::map<int16_t, State*> dfa2;
+  std::map<int16_t, State*> dfa3;
 
   std::ifstream fd(argv[1]);
   if(fd.is_open()){
@@ -40,10 +46,20 @@ int main(int argc, char** argv){
   }
   else
     std::cout << "Error opening file\n";
-
   fd.close();
 
+  //create the paired dfa
+  dfa3 = create_c(dfa, dfa2);
   //check for equality
+  //result is empty if they are same langauge, otherwise result is string that differs
+  std::string result = check_equality(dfa3);
+
+  if(result.empty())
+    std::cout <<"yes\n";
+  else{
+    std::cout <<"no\n";
+    std::cout << "Difference: " << result << std::endl;
+  }
 
 }
 
@@ -84,7 +100,13 @@ void read_machine(std::ifstream &fd, std::map<int16_t, State*>& dfa){
       }
       temp.transitions.push_back(t);
     }
-    fd.close();
   }
+}
 
+std::string check_equality(std::map<int16_t, State*>& dfa,std::map<int16_t, State*>& dfa2){
+  std::string result = "";
+
+
+  //return empty string if dfas are equivalent
+  return result; 
 }
