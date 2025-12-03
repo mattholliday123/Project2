@@ -53,7 +53,7 @@ void read_machine(std::ifstream &fd, std::map<int16_t, State*>& dfa, std::string
 //function dec to check equality
 std::string check_equality(std::map<std::pair<int16_t, int16_t>,C_State*>& dfa3);
 //function dec to create dfa_c
-void create_c(std::map<int16_t, State*>& dfa,std::map<int16_t, State*>& dfa2, std::map<std::pair<int16_t, int16_t>,C_State*>& dfa3);
+void create_c(const std::map<int16_t, State*>& dfa, const std::map<int16_t, State*>& dfa2, std::map<std::pair<int16_t, int16_t>,C_State*>& dfa3);
 
 int main(int argc, char** argv){
   std::map<int16_t, State*> dfa;
@@ -150,7 +150,9 @@ void create_c(const std::map<int16_t, State*>& dfa1, const std::map<int16_t, Sta
     for (auto& [id1, state1] : dfa1) {
         for (auto& [id2, state2] : dfa2) {
             auto key = std::make_pair(id1, id2);
-            dfa3[key] = new C_State{state1, state2};
+            dfa3[key] = new C_State;
+            dfa3[key]->a = state1;
+            dfa3[key]->b = state2;
         }
     }
     // create the transitions
