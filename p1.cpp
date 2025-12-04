@@ -123,7 +123,7 @@ std::string run_dfa(std::map<int16_t, State*> &dfa){
       State* next = t.next;
       s += t.c;
 
-      if(cur->accept)
+      if(next->accept)
         return s;
 
       if(!visited.count(next->id)){
