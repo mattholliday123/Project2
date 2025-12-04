@@ -1,0 +1,2 @@
+q0q1q2,q0aq1,q0bq2,q1aq0,q1bq2,q2aq2,q2bq2
+q0q1q2q3,q0aq0,q0bq1,q1aq0,q1bq2,q2aq0,q2bq3,q3aq0,q3bq3

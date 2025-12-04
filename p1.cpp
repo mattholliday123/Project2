@@ -71,7 +71,7 @@ int main(int argc, char** argv){
     fd.close();
   }
 
-
+  /*
   for(auto state : states){
     std::cout << "id: " << state.id << " accept: " << state.accept << "\n";
     if(state.transitions.empty())
@@ -81,6 +81,7 @@ int main(int argc, char** argv){
       std::cout <<"char " << t.c << " next " << t.next->id <<"\n";
     }
   }
+  */
 
 
   std::string accepted_string = "";
