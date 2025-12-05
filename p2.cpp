@@ -5,9 +5,12 @@
 #include <utility>
 #include <vector>
 #include <map>
+#include <set>
+#include <sstream>
 
 
 struct State;
+struct C_State;
 
 /*Defines a transition
  * next defines the state it's going to
@@ -43,6 +46,7 @@ struct C_State{
   State* a;
   State* b;
   std::vector<Transition> transitions;
+  bool accept;
 };
 
 
@@ -75,16 +79,6 @@ int main(int argc, char** argv){
 
   //create the paired dfa
   create_c(dfa, dfa2, dfa3);
-    //if states differ on acceptance within pair (q,r), break and simulate dfa, otherwise they are equivalent
-    for (auto& [key, pair] : dfa3) {
-      if((pair->a->accept && !pair->b->accept) || !pair->a->accept && pair->a->accept){
-        break;
-      }else{
-        std::cout <<"yes\n";
-        exit(1);
-    }
-  }
-
   //result is empty if they are same langauge, otherwise result is string that differs
   //check for equality
   std::string result = check_equality(dfa3);
@@ -103,39 +97,40 @@ int main(int argc, char** argv){
  * @Param line - The line we are parsing
  */
 void read_machine(std::ifstream &fd, std::map<int16_t, State*>& dfa, std::string line){
-  std::vector<State> states;
 /*read in file
   *in format q0fq1q2fq3,q0aq1,q0bq0,q1aq2,q1bq3,q2aq2,q2bq3,q3aq0,q3bq2
   *where q0 is start, q0 and q2 are accept states
   */
   if(fd.is_open()){
     //read first part, setting up the dfa
-    getline(fd, line, ',');
+    std::stringstream ss(line);
+
+    std::getline(ss, line, ',');
     for(size_t i = 0; i < line.length() - 1; ++i){
       if(line[i] == 'q'){
-        State s;
-        s.id = line[i+1] - '0';
+        State* s = new State;
+        s->id = line[i+1] - '0';
         if(line[i+2] == 'f')
-          s.accept = true;
+          s->accept = true;
         else
-          s.accept = false;
-        states.push_back(s);
+          s->accept = false;
+        dfa[s->id] = s;
       }
     }
 
     //read rest of file
-    while(std::getline(fd, line, ',')){
+    while(std::getline(ss, line, ',')){
       //convert state num in string into num
       //Note that states will be in order given by input so we can hardcode
-      State& temp = states[line[1] - '0'];
-      State& temp2 = states[line[4] - '0'];
+      State* temp = dfa[line[1] - '0'];
+      State* temp2 = dfa[line[4] - '0'];
       Transition t;
-      t.next= &temp2;
+      t.next= temp2;
       t.c = line[2];
-      if(!dfa.count(temp.id)){
-        dfa[temp.id] = &temp;
+      if(!dfa.count(temp->id)){
+        dfa[temp->id] = temp;
       }
-      temp.transitions.push_back(t);
+      temp->transitions.push_back(t);
     }
   }
 }
@@ -153,6 +148,12 @@ void create_c(const std::map<int16_t, State*>& dfa1, const std::map<int16_t, Sta
             dfa3[key] = new C_State;
             dfa3[key]->a = state1;
             dfa3[key]->b = state2;
+            if((state1->accept && !state2->accept) || (!state1->accept && state2->accept)){
+              dfa3[key]->accept = true;
+            }
+            else{
+              dfa3[key]->accept = false;
+            }
         }
     }
     // create the transitions
@@ -176,8 +177,38 @@ void create_c(const std::map<int16_t, State*>& dfa1, const std::map<int16_t, Sta
 
 /*We run this function to run our dfa_c to find a string that exists in one and not the otherwise
  * @Param dfa - this is dfa_c we are simulating
- */
+*/ 
 std::string check_equality(std::map<std::pair<int16_t, int16_t>,C_State*>& dfa3){
   //no accept state reached, return empty
+  std::queue<std::pair<C_State*, std::string>> q;
+  std::set<std::pair<int,int>> visited;
+  C_State* start = dfa3[std::make_pair(0,0)];
+  q.push({start, ""});
+  visited.insert({start->a->id, start->b->id} );
+
+  while(!q.empty()){
+    auto [cur, s] = q.front();
+    q.pop();
+    
+    
+    for(const auto& t : cur->transitions){
+      std::pair<int16_t,int16_t> next= t.paired_next;
+      std::string next_s = s + t.c;
+      auto it = dfa3.find(next);
+      if (it == dfa3.end())
+        continue;  // OR error
+
+      C_State* next_state = it->second;
+
+
+      if(next_state->accept)
+        return next_s;
+
+      if(!visited.count({next.first, next.second})){
+        visited.insert({next.first, next.second});
+        q.push({next_state, next_s});
+      }
+    }
+  }
   return ""; 
 }
